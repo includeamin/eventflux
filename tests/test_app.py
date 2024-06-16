@@ -1,6 +1,4 @@
 import asyncio
-import random
-import time
 
 import eventflux
 
@@ -23,7 +21,8 @@ def user_created_handler(event: eventflux.CloudEvent):
 @user_event_router.on_event(type="magicscout.user.updated")
 async def user_updated_handler(event: eventflux.CloudEvent):
     print(event.subject, event.type)
-    await asyncio.sleep(random.randint(1, 10))
+    # await asyncio.sleep(random.randint(1, 10))
+    await asyncio.sleep(5)
 
 
 app.mount_subscriber(subscriber=kafka_subscriber)

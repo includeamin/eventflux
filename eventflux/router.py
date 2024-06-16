@@ -1,7 +1,17 @@
+import abc
 import asyncio
 import functools
 
 import eventflux.handler
+
+
+class RouterAbstractClass(abc.ABC):
+    @abc.abstractmethod
+    def on_event(self, type: str):
+        raise NotImplementedError
+
+    async def route_if_match(self, event: eventflux.event.CloudEvent):
+        raise NotImplementedError
 
 
 class Router:
