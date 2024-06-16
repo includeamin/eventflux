@@ -15,10 +15,8 @@ class RouterAbstractClass(abc.ABC):
 
 
 class Router:
-    handlers: dict[str, eventflux.handler.Handler] = {}
-
     def __init__(self):
-        self.handlers = {}
+        self.handlers: dict[str, eventflux.handler.HandlerAbstractClass] = {}
 
     def on_event(self, type: str):
         def wrapper(func):

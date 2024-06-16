@@ -14,18 +14,16 @@ log = structlog.get_logger()
 class App:
     def __init__(self, identifier: str = None):
         self.identifier = str(uuid.uuid4()) if not identifier else identifier
-        self.routers: list[type[eventflux.router.RouterAbstractClass]] = []
-        self.subscribers: list[
-            type[eventflux.subscribers.base.SubscriberAbstractClass]
-        ] = []
+        self.routers: list[eventflux.router.RouterAbstractClass] = []
+        self.subscribers: list[eventflux.subscribers.base.SubscriberAbstractClass] = []
         self._in_progress_events = {}
         self._must_exit = False
 
-    def mount_router(self, router: type[eventflux.router.RouterAbstractClass]):
+    def mount_router(self, router: eventflux.router.RouterAbstractClass):
         self.routers.append(router)
 
     def mount_subscriber(
-        self, subscriber: type[eventflux.subscribers.base.SubscriberAbstractClass]
+        self, subscriber: eventflux.subscribers.base.SubscriberAbstractClass
     ):
         self.subscribers.append(subscriber)
 
