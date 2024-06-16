@@ -1,8 +1,15 @@
+import abc
 import functools
 import typing
 import inspect
 
 import eventflux.event
+
+
+class HandlerAbstractClass(abc.ABC):
+    @abc.abstractmethod
+    async def handle_if_match(self, event: eventflux.event.CloudEvent):
+        raise NotImplementedError
 
 
 class Handler:
