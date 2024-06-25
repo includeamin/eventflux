@@ -15,7 +15,12 @@ kafka_subscriber = eventflux.KafkaSubscriber(
 
 @user_event_router.on_event(type="magicscout.user.created")
 def user_created_handler(event: eventflux.CloudEvent):
-    print(event.subject, event.type)
+    print(event.subject, event.type, 1)
+
+
+@user_event_router.on_event(type="magicscout.user.created")
+def user_created_handler_2(event: eventflux.CloudEvent):
+    print(event.subject, event.type, 2)
 
 
 @user_event_router.on_event(type="magicscout.user.updated")

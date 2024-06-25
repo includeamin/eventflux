@@ -14,11 +14,12 @@ class RouterAbstractClass(abc.ABC):
         raise NotImplementedError
 
 
-class Router:
+class Router(RouterAbstractClass):
     def __init__(self):
         self.handlers: dict[str, eventflux.handler.HandlerAbstractClass] = {}
 
     def on_event(self, type: str):
+        @functools.wraps
         def wrapper(func):
             _handler = eventflux.Handler(type=type, func=func)
             self.handlers.update({type: _handler})
