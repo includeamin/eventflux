@@ -1,5 +1,6 @@
 import asyncio
 
+
 import eventflux
 
 app = eventflux.App(identifier="user-service")
