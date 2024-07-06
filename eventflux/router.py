@@ -3,24 +3,26 @@ import asyncio
 import functools
 
 import eventflux.handler
+import eventflux.event
 
 
 class RouterAbstractClass(abc.ABC):
     @abc.abstractmethod
-    def on_event(self, type: str):
+    def on_event(self, **kwargs):
         raise NotImplementedError
 
-    async def route_if_match(self, event: eventflux.event.CloudEvent):
+    @abc.abstractmethod
+    async def route_if_match(self, event: eventflux.event.BaseEvent):
         raise NotImplementedError
 
 
-class Router:
+class CloudEventRouter(RouterAbstractClass):
     def __init__(self):
         self.handlers: dict[str, eventflux.handler.HandlerAbstractClass] = {}
 
     def on_event(self, type: str):
         def wrapper(func):
-            _handler = eventflux.Handler(type=type, func=func)
+            _handler = eventflux.CloudEventHandler(type=type, func=func)
             self.handlers.update({type: _handler})
 
         return wrapper

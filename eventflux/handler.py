@@ -8,11 +8,11 @@ import eventflux.event
 
 class HandlerAbstractClass(abc.ABC):
     @abc.abstractmethod
-    async def handle_if_match(self, event: eventflux.event.CloudEvent):
+    async def handle_if_match(self, event: eventflux.event.BaseEvent):
         raise NotImplementedError
 
 
-class Handler:
+class CloudEventHandler(HandlerAbstractClass):
     def __init__(self, type: str, func: typing.Callable):
         self.type = type
         self.func = func

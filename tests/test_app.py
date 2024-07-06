@@ -4,7 +4,7 @@ import eventflux
 
 app = eventflux.App(identifier="user-service")
 
-user_event_router = eventflux.Router()
+user_event_router = eventflux.CloudEventRouter()
 
 kafka_subscriber = eventflux.KafkaSubscriber(
     bootstrap_servers="localhost:9092",
