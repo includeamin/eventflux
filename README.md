@@ -12,3 +12,7 @@
 - **Robust Integration**: Seamlessly connect with various event brokers to leverage existing infrastructure and tools, enabling a smooth transition to event-driven architecture.
 
 Whether you're building real-time data processing pipelines, reactive microservices, or any other event-driven application, EventFlux offers the tools and features you need to succeed. Embrace the power of events with EventFlux and take your development to the next level.
+
+## Development Status
+
+**Note:** EventFlux is currently under development and is not yet ready for production use. We appreciate your interest and encourage you to follow the project for updates and contribute to its progress.
