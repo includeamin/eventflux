@@ -6,13 +6,17 @@ from kafka import KafkaConsumer
 import eventflux.event
 
 
-class KafkaSubscriber(eventflux.subscribers.base.SubscriberAbstractClass):
+SERIALIZER_TYPE = typing.Callable[[typing.Any], eventflux.event.BaseEvent]
+
+
+class KafkaCloudEventSubscriber(eventflux.subscribers.base.SubscriberAbstractClass):
     def __init__(
         self,
         bootstrap_servers: typing.Union[str, list[str]],
         group_id: str,
         topics: list[str],
         pattern: str = None,
+        event_serializer: SERIALIZER_TYPE = None,
         **kwargs
     ):
         self.consumer = KafkaConsumer(
@@ -22,7 +26,11 @@ class KafkaSubscriber(eventflux.subscribers.base.SubscriberAbstractClass):
             **kwargs
         )
         self.consumer.subscribe(topics=topics, pattern=pattern)
+        self.event_serializer = event_serializer
 
-    async def listening(self) -> typing.AsyncIterator[eventflux.event.CloudEvent]:
+    async def listening(self) -> typing.AsyncIterator[eventflux.event.BaseEvent]:
         for msg in self.consumer:
-            yield eventflux.event.CloudEvent(**orjson.loads(msg.value))
+            if self.event_serializer is not None:
+                yield self.event_serializer(msg.value)
+            else:
+                yield eventflux.event.CloudEvent(**orjson.loads(msg.value))

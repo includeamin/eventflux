@@ -1,12 +1,13 @@
 import asyncio
 
+
 import eventflux
 
 app = eventflux.App(identifier="user-service")
 
-user_event_router = eventflux.Router()
+user_event_router = eventflux.CloudEventRouter()
 
-kafka_subscriber = eventflux.KafkaSubscriber(
+kafka_subscriber = eventflux.KafkaCloudEventSubscriber(
     bootstrap_servers="localhost:9092",
     topics=["magicscout"],
     group_id="ms-user-service",

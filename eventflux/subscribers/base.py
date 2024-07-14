@@ -5,5 +5,5 @@ import abc
 
 class SubscriberAbstractClass(abc.ABC):
     @abc.abstractmethod
-    async def listening(self) -> typing.AsyncIterator[eventflux.event.CloudEvent]:
+    async def listening(self) -> typing.AsyncIterator[eventflux.event.BaseEvent]:
         raise NotImplementedError
