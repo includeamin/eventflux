@@ -1,0 +1,57 @@
+repos:
+  - repo: local
+    # Pre-built hooks for all these "local" checks are available as well. We rather
+    # define our own to ensure their version matches the one in pyproject.toml/poetry.lock
+    hooks:
+      # python code linters
+      - id: black
+        name: black
+        language: system
+        entry: poetry run black
+        types: [python]
+      - id: ruff
+        name: ruff
+        language: system
+        entry: poetry run ruff check
+        types: [python]
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: mypy
+        name: mypy
+        language: system
+        entry: poetry run mypy
+        types: [python]
+      # poetry checks
+      - id: poetry-check
+        name: poetry-check
+        language: system
+        entry: poetry check
+        files: ^pyproject.toml$
+        pass_filenames: false
+      - id: poetry-lock-check
+        name: check-poetry-lock
+        entry: poetry check
+        language: system
+        pass_filenames: false
+        args: [ "--lock" ]
+        files: |
+          (?x)^(
+              pyproject.toml|
+              poetry.lock
+          )$
+
+  # common checks that aren't supported by the linters we use in this service
+  # i.e. in a project that uses prettier, you don't need the json checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v2.2.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]

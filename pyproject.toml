@@ -16,6 +16,129 @@ structlog = "^24.2.0"
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
 ruff = "^0.4.6"
+mypy = "^1.10.1"
+
+
+
+[tool.mypy]
+# docs: https://mypy.readthedocs.io/en/stable/config_file.html
+python_version = "3.11"
+allow_redefinition = false
+check_untyped_defs = true
+disallow_untyped_decorators = true
+disallow_any_explicit = false
+disallow_any_generics = false
+disallow_untyped_calls = true
+ignore_errors = false
+ignore_missing_imports = true
+implicit_reexport = false
+strict_optional = true
+strict_equality = true
+no_implicit_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unreachable = true
+warn_no_return = true
+plugins = [
+]
+exclude = [
+    "build",
+    ".venv"
+]
+
+[tool.ruff]
+target-version = "py311"
+output-format = "full"
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+[tool.ruff.lint]
+# list of all rules: https://beta.ruff.rs/docs/rules/
+ignore = [
+    "E501",
+    "F722",
+    "PTH123",
+    "PT004",
+    "PT005",
+    "UP007",
+    "SIM108",
+]
+select = [
+    "E",
+    "F",
+    "W",
+    "G",
+    "PT",
+    "ERA",
+    "B",
+    "C90",
+    "YTT",
+    "S",
+    "A001",
+    "C4",
+    "T10",
+    "ISC",
+    "ICN",
+    "INP",
+    "PIE",
+    "T20",
+    "SIM",
+    "PTH",
+    "PGH",
+    "PL",
+    "RUF",
+    "I",
+    "UP",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "E402",
+]
+"tests/*" = [
+    "S101",
+    "PLR2004",
+    "PLR0913",
+]
+
+[tool.ruff.lint.pylint]
+max-args = 7
+
+[tool.ruff.lint.isort]
+# https://beta.ruff.rs/docs/settings/#isort
+known-first-party = []
+known-local-folder = [
+    "eventflux",
+    "tests",
+]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "typer.Argument",
+]
+
 
 [build-system]
 requires = ["poetry-core"]
