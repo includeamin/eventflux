@@ -122,6 +122,7 @@ select = [
     "S101",
     "PLR2004",
     "PLR0913",
+    "T201" # temporary. should be dropped when tests are written
 ]
 
 [tool.ruff.lint.pylint]

@@ -1,10 +1,10 @@
 import asyncio
-import functools
 import typing
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
 
-import eventflux.handler
 import eventflux.event
+import eventflux.handler
 
 F = typing.TypeVar("F", bound=typing.Callable[..., typing.Any])
 
@@ -20,9 +20,8 @@ class CloudEventRouter:
 
         return wrapper
 
-    @functools.lru_cache
     def _can_route(self, type: str) -> bool:
-        return type in self.handlers.keys()
+        return type in self.handlers
 
     async def _route(self, event: eventflux.event.CloudEvent):
         await asyncio.gather(

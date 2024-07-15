@@ -1,10 +1,10 @@
 import typing
 
-import eventflux.subscribers.base
 import orjson
 from kafka import KafkaConsumer
-import eventflux.event
 
+import eventflux.event
+import eventflux.subscribers.base
 
 SERIALIZER_TYPE = typing.Callable[[typing.Any], eventflux.event.CloudEvent]
 

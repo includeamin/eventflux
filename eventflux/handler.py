@@ -1,6 +1,5 @@
-import functools
-import typing
 import inspect
+import typing
 
 import eventflux.event
 
@@ -20,7 +19,6 @@ class CloudEventHandler:
 
         self._awaitable = inspect.iscoroutinefunction(self.func)
 
-    @functools.lru_cache
     def _can_handle(self, type: str) -> bool:
         return type == self.type
 

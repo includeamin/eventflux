@@ -1,6 +1,7 @@
-import typing
-import eventflux.event
 import abc
+import typing
+
+import eventflux.event
 
 
 class SubscriberAbstractClass(abc.ABC):

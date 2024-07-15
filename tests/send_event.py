@@ -1,10 +1,10 @@
 import datetime
-import time
 import json
+import time
 import uuid
 
-from kafka import KafkaProducer
 from cloudevents.pydantic.v2 import CloudEvent
+from kafka import KafkaProducer
 
 producer = KafkaProducer(
     bootstrap_servers="localhost:9092",
