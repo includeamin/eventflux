@@ -67,11 +67,10 @@ class App:
         start_time = time.time()
         tasks = [router.route_if_match(event=event) for router in self.routers]
         await asyncio.gather(*tasks)
-        end_time = time.time()
         log.info(
             "event has been processed",
             type=event.type,
-            duration=(end_time - start_time) * 1000,
+            duration=(time.time() - start_time) * 1000,  # in milliseconds
         )
         self._in_progress_tasks.pop(id(event))
 
