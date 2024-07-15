@@ -1,13 +1,14 @@
-import functools
-import typing
 import inspect
+import typing
 
 import eventflux.event
 
 
 class CloudEventHandler:
-    def __init__(self, type: str, func: typing.Callable):
-        self.type = type
+    def __init__(
+        self,
+        func: typing.Callable,
+    ):
         self.func = func
         self._awaitable = False
         self._analyze_handler_func()
@@ -20,15 +21,7 @@ class CloudEventHandler:
 
         self._awaitable = inspect.iscoroutinefunction(self.func)
 
-    @functools.lru_cache
-    def _can_handle(self, type: str) -> bool:
-        return type == self.type
-
-    async def _handle(self, event: eventflux.event.CloudEvent):
+    async def handle(self, event: eventflux.event.CloudEvent):
         if self._awaitable:
             return await self.func(event=event)
         return self.func(event=event)
-
-    async def handle_if_match(self, event: eventflux.event.CloudEvent):
-        if self._can_handle(type=event.type):
-            await self._handle(event=event)

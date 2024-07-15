@@ -1,19 +1,19 @@
 import asyncio
 import signal
-
 import time
 import uuid
 
-import eventflux.subscribers.base
-import eventflux.router
 import structlog
+
+import eventflux.router
+import eventflux.subscribers.base
 
 log = structlog.get_logger()
 
 
 class App:
     def __init__(self, identifier: str | None = None):
-        self.identifier = str(uuid.uuid4()) if not identifier else identifier
+        self.identifier = identifier if identifier else str(uuid.uuid4())
         self.routers: list[eventflux.router.CloudEventRouter] = []
         self.subscribers: list[eventflux.subscribers.base.SubscriberAbstractClass] = []
         self._in_progress_tasks: dict[int, asyncio.tasks.Task] = {}
@@ -67,11 +67,10 @@ class App:
         start_time = time.time()
         tasks = [router.route_if_match(event=event) for router in self.routers]
         await asyncio.gather(*tasks)
-        end_time = time.time()
         log.info(
             "event has been processed",
             type=event.type,
-            duration=(end_time - start_time) * 1000,
+            duration=(time.time() - start_time) * 1000,  # in milliseconds
         )
         self._in_progress_tasks.pop(id(event))
 
@@ -88,9 +87,7 @@ class App:
                     "waiting for all tasks to be finished",
                     total_in_progress_tasks=len(self._in_progress_tasks),
                 )
-                await asyncio.gather(
-                    *[task for task in self._in_progress_tasks.values()]
-                )
+                await asyncio.gather(*list(self._in_progress_tasks.values()))
                 log.info("Bye!")
                 break
             await asyncio.sleep(0.1)

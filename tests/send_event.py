@@ -1,10 +1,11 @@
 import datetime
-import time
 import json
+import random
+import time
 import uuid
 
-from kafka import KafkaProducer
 from cloudevents.pydantic.v2 import CloudEvent
+from kafka import KafkaProducer
 
 producer = KafkaProducer(
     bootstrap_servers="localhost:9092",
@@ -12,17 +13,14 @@ producer = KafkaProducer(
 )
 action = "created"
 count = 0
+available_actions = ["created", "registered", "updated"]
 while True:
     event = CloudEvent(
         subject=f"magicscout:user:{uuid.uuid4()}",
         data={"created_at": datetime.datetime.now().timestamp()},
-        type=f"magicscout.user.{action}",
+        type=f"magicscout.user.{available_actions[random.randint(0,2)]}",  # noqa: S311
         source="magicscout.service.user",
     )
-    if action == "created":
-        action = "updated"
-    else:
-        action = "created"
 
     time.sleep(1)
     res = producer.send(topic="magicscout", value=event)
