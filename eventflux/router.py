@@ -1,28 +1,21 @@
-import abc
 import asyncio
 import functools
+import typing
+from typing import Callable, Any
 
 import eventflux.handler
 import eventflux.event
 
-
-class RouterAbstractClass(abc.ABC):
-    @abc.abstractmethod
-    def on_event(self, **kwargs):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    async def route_if_match(self, event: eventflux.event.BaseEvent):
-        raise NotImplementedError
+F = typing.TypeVar("F", bound=typing.Callable[..., typing.Any])
 
 
-class CloudEventRouter(RouterAbstractClass):
-    def __init__(self):
-        self.handlers: dict[str, eventflux.handler.HandlerAbstractClass] = {}
+class CloudEventRouter:
+    def __init__(self) -> None:
+        self.handlers: dict[str, eventflux.handler.CloudEventHandler] = {}
 
-    def on_event(self, type: str):
-        def wrapper(func):
-            _handler = eventflux.CloudEventHandler(type=type, func=func)
+    def on_event(self, type: str) -> Callable[[Callable[..., Any]], Any]:
+        def wrapper(func: typing.Callable[..., typing.Any]) -> typing.Any:
+            _handler = eventflux.handler.CloudEventHandler(type=type, func=func)
             self.handlers.update({type: _handler})
 
         return wrapper

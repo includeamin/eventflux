@@ -1,4 +1,3 @@
-import abc
 import functools
 import typing
 import inspect
@@ -6,20 +5,14 @@ import inspect
 import eventflux.event
 
 
-class HandlerAbstractClass(abc.ABC):
-    @abc.abstractmethod
-    async def handle_if_match(self, event: eventflux.event.BaseEvent):
-        raise NotImplementedError
-
-
-class CloudEventHandler(HandlerAbstractClass):
+class CloudEventHandler:
     def __init__(self, type: str, func: typing.Callable):
         self.type = type
         self.func = func
         self._awaitable = False
         self._analyze_handler_func()
 
-    def _analyze_handler_func(self):
+    def _analyze_handler_func(self) -> None:
         signature = inspect.signature(self.func)
 
         if "event" not in signature.parameters:
