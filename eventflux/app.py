@@ -12,14 +12,14 @@ log = structlog.get_logger()
 
 
 class App:
-    def __init__(self, identifier: str = None):
+    def __init__(self, identifier: str | None = None):
         self.identifier = str(uuid.uuid4()) if not identifier else identifier
-        self.routers: list[eventflux.router.RouterAbstractClass] = []
+        self.routers: list[eventflux.router.CloudEventRouter] = []
         self.subscribers: list[eventflux.subscribers.base.SubscriberAbstractClass] = []
-        self._in_progress_events = {}
+        self._in_progress_tasks: dict[int, asyncio.tasks.Task] = {}
         self._must_exit = False
 
-    def mount_router(self, router: eventflux.router.RouterAbstractClass):
+    def mount_router(self, router: eventflux.router.CloudEventRouter):
         self.routers.append(router)
 
     def mount_subscriber(
@@ -33,7 +33,7 @@ class App:
             if self._must_exit:
                 log.info(
                     "worker has been stopped",
-                    in_progress_events_count=len(self._in_progress_events),
+                    in_progress_events_count=len(self._in_progress_tasks),
                 )
                 break
             if queue.empty():
@@ -42,13 +42,15 @@ class App:
                 continue
             event = await queue.get()
             task = asyncio.create_task(self.handle(event=event))
-            self._in_progress_events[id(event)] = task
+            self._in_progress_tasks[id(event)] = task
             await asyncio.sleep(0.01)
 
     async def _start_listening(
-        self, queue: asyncio.Queue, subscriber: type[eventflux.subscribers.base]
+        self,
+        queue: asyncio.Queue,
+        subscriber: eventflux.subscribers.base.SubscriberAbstractClass,
     ):
-        log.info("fir up all listeners", lesteners_count=len(self.subscribers))
+        log.info("for up all listeners", lesteners_count=len(self.subscribers))
         async for event in subscriber.listening():
             if self._must_exit:
                 log.info("stop listening")
@@ -57,11 +59,11 @@ class App:
             log.debug(
                 "task has been added to the queue",
                 event_id=event.id,
-                total_in_progress_task=len(self._in_progress_events),
+                total_in_progress_task=len(self._in_progress_tasks),
             )
             await asyncio.sleep(0.01)
 
-    async def handle(self, event):
+    async def handle(self, event: eventflux.event.CloudEvent) -> None:
         start_time = time.time()
         tasks = [router.route_if_match(event=event) for router in self.routers]
         await asyncio.gather(*tasks)
@@ -71,32 +73,32 @@ class App:
             type=event.type,
             duration=(end_time - start_time) * 1000,
         )
-        self._in_progress_events.pop(id(event))
+        self._in_progress_tasks.pop(id(event))
 
-    def run(self):
+    def run(self) -> None:
         asyncio.run(self.async_app())
 
     def finish(self):
         self._must_exit = True
 
-    async def _monitor_in_progress_tasks(self):
+    async def _monitor_in_progress_tasks(self) -> None:
         while True:
             if self._must_exit:
                 log.info(
                     "waiting for all tasks to be finished",
-                    total_in_progress_tasks=len(self._in_progress_events),
+                    total_in_progress_tasks=len(self._in_progress_tasks),
                 )
                 await asyncio.gather(
-                    *[task for task in self._in_progress_events.values()]
+                    *[task for task in self._in_progress_tasks.values()]
                 )
                 log.info("Bye!")
                 break
             await asyncio.sleep(0.1)
 
-    async def async_app(self):
+    async def async_app(self) -> None:
         loop = asyncio.get_event_loop()
         loop.add_signal_handler(signal.SIGINT, self.finish)
-        queue = asyncio.Queue()
+        queue: asyncio.Queue = asyncio.Queue()
         await asyncio.gather(
             self._process_events(queue=queue),
             self._start_listening(subscriber=self.subscribers[0], queue=queue),

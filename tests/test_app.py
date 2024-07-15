@@ -15,12 +15,12 @@ kafka_subscriber = eventflux.KafkaCloudEventSubscriber(
 
 
 @user_event_router.on_event(type="magicscout.user.created")
-def user_created_handler(event: eventflux.CloudEvent):
+def user_created_handler(event: eventflux.CloudEvent) -> None:
     print(event.subject, event.type)
 
 
 @user_event_router.on_event(type="magicscout.user.updated")
-async def user_updated_handler(event: eventflux.CloudEvent):
+async def user_updated_handler(event: eventflux.CloudEvent) -> None:
     print(event.subject, event.type)
     # await asyncio.sleep(random.randint(1, 10))
     await asyncio.sleep(5)
