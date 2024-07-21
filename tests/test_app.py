@@ -1,6 +1,8 @@
+import logging
+
 import eventflux
 
-app = eventflux.App(identifier="user-service")
+app = eventflux.App(identifier="user-service", log_level=logging.INFO)
 
 user_event_router = eventflux.CloudEventRouter()
 

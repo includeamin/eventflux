@@ -1,23 +1,29 @@
 import asyncio
+import logging
 import signal
 import time
 import uuid
 
 import structlog
 
+import eventflux.logger
 import eventflux.router
 import eventflux.subscribers.base
 
-log = structlog.get_logger()
-
 
 class App:
-    def __init__(self, identifier: str | None = None):
+    def __init__(
+        self, identifier: str | None = None, log_level: int = logging.CRITICAL
+    ):
         self.identifier = identifier if identifier else str(uuid.uuid4())
         self.routers: list[eventflux.router.CloudEventRouter] = []
         self.subscribers: list[eventflux.subscribers.base.SubscriberAbstractClass] = []
         self._in_progress_tasks: dict[int, asyncio.tasks.Task] = {}
         self._must_exit = False
+
+        eventflux.logger.setup()
+        logging.basicConfig(level=log_level)
+        self.logger = structlog.get_logger()
 
     def mount_router(self, router: eventflux.router.CloudEventRouter):
         self.routers.append(router)
@@ -28,16 +34,16 @@ class App:
         self.subscribers.append(subscriber)
 
     async def _process_events(self, queue: asyncio.Queue):
-        log.info("start processing events")
+        self.logger.info("start processing events")
         while True:
             if self._must_exit:
-                log.info(
+                self.logger.info(
                     "worker has been stopped",
                     in_progress_events_count=len(self._in_progress_tasks),
                 )
                 break
             if queue.empty():
-                log.debug("empty queue is detected, waiting for input")
+                self.logger.debug("empty queue is detected, waiting for input")
                 await asyncio.sleep(0.01)
                 continue
             event = await queue.get()
@@ -50,13 +56,13 @@ class App:
         queue: asyncio.Queue,
         subscriber: eventflux.subscribers.base.SubscriberAbstractClass,
     ):
-        log.info("for up all listeners", lesteners_count=len(self.subscribers))
+        self.logger.info("for up all listeners", lesteners_count=len(self.subscribers))
         async for event in subscriber.listening():
             if self._must_exit:
-                log.info("stop listening")
+                self.logger.info("stop listening")
                 break
             await queue.put(event)
-            log.debug(
+            self.logger.debug(
                 "task has been added to the queue",
                 event_id=event.id,
                 total_in_progress_task=len(self._in_progress_tasks),
@@ -67,7 +73,7 @@ class App:
         start_time = time.time()
         tasks = [router.route_if_match(event=event) for router in self.routers]
         await asyncio.gather(*tasks)
-        log.info(
+        self.logger.debug(
             "event has been processed",
             type=event.type,
             duration=(time.time() - start_time) * 1000,  # in milliseconds
@@ -83,12 +89,12 @@ class App:
     async def _monitor_in_progress_tasks(self) -> None:
         while True:
             if self._must_exit:
-                log.info(
+                self.logger.info(
                     "waiting for all tasks to be finished",
                     total_in_progress_tasks=len(self._in_progress_tasks),
                 )
                 await asyncio.gather(*list(self._in_progress_tasks.values()))
-                log.info("Bye!")
+                self.logger.info("Bye!")
                 break
             await asyncio.sleep(0.1)
 
