@@ -1,7 +1,7 @@
 import typing
 
 import orjson
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer as _KafkaConsumer
 
 import eventflux.event
 import eventflux.subscribers.base
@@ -19,7 +19,7 @@ class KafkaCloudEventSubscriber(eventflux.subscribers.base.SubscriberAbstractCla
         event_serializer: SERIALIZER_TYPE | None = None,
         **kwargs
     ):
-        self.consumer = KafkaConsumer(
+        self.consumer = _KafkaConsumer(
             bootstrap_servers=bootstrap_servers,
             group_id=group_id,
             value_deserializer=lambda x: orjson.loads(x.decode("utf-8")),

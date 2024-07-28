@@ -21,18 +21,24 @@ class CloudEventRouter:
     def on_event(
         self, type: str | None = None, types: list[str] | None = None
     ) -> Callable[[Callable[..., Any]], Any]:
-        _validate_filters(type, types)
-
         def wrapper(func: typing.Callable[..., typing.Any]) -> typing.Any:
-            _handler = eventflux.handler.CloudEventHandler(func=func)
-
-            if type:
-                self._register_handler(type=type, handler=_handler)
-            if types:
-                for _type in types:
-                    self._register_handler(type=_type, handler=_handler)
+            self.add_event_handler(func=func, types=types, type=type)
 
         return wrapper
+
+    def add_event_handler(
+        self,
+        func: typing.Callable[..., typing.Any],
+        type: str | None = None,
+        types: list[str] | None = None,
+    ) -> None:
+        _validate_filters(type, types)
+        _handler = eventflux.handler.CloudEventHandler(func=func)
+        if type:
+            self._register_handler(type=type, handler=_handler)
+        if types:
+            for _type in types:
+                self._register_handler(type=_type, handler=_handler)
 
     def _register_handler(
         self, type: str, handler: eventflux.handler.CloudEventHandler
