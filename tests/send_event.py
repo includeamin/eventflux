@@ -13,12 +13,12 @@ producer = KafkaProducer(
 )
 action = "created"
 count = 0
-available_actions = ["created", "registered", "updated"]
+available_actions = ["created", "registered", "updated", "deleted"]
 while True:
     event = CloudEvent(
         subject=f"magicscout:user:{uuid.uuid4()}",
         data={"created_at": datetime.datetime.now().timestamp()},
-        type=f"magicscout.user.{available_actions[random.randint(0,2)]}",  # noqa: S311
+        type=f"magicscout.user.{available_actions[random.randint(0,3)]}",  # noqa: S311
         source="magicscout.service.user",
     )
 

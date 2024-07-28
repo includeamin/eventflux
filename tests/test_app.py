@@ -26,6 +26,14 @@ async def user_updated_handler(event: eventflux.CloudEvent) -> None:
     # await asyncio.sleep(5)
 
 
+async def user_deleted_handler(event: eventflux.CloudEvent):
+    print(event.subject, event.type)
+
+
+user_event_router.add_event_handler(
+    func=user_deleted_handler, type="magicscout.user.deleted"
+)
+
 app.mount_subscriber(subscriber=kafka_subscriber)
 app.mount_router(router=user_event_router)
 app.run()
