@@ -5,18 +5,17 @@ import eventflux.router
 
 app = eventflux.App(identifier="user-service", log_level=logging.INFO)
 
-# user_event_router = eventflux.CloudEventRouter()
 user_event_router = eventflux.router.GenericEventRouter()
 
 kafka_subscriber = eventflux.KafkaCloudEventSubscriber(
     bootstrap_servers="localhost:9092",
-    topics=["magicscout"],
+    topics=["example"],
     group_id="ms-user-service",
 )
 
 
 @user_event_router.on_event(
-    content_type="application/json", jsonata_expr='type = "magicscout.user.created"'
+    content_type="application/json", jsonata_expr='type = "example.user.created"'
 )
 def user_created_handler(event: eventflux.Event) -> None:
     print(event)
