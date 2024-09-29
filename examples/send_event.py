@@ -17,13 +17,13 @@ count = 0
 available_actions = ["created"]
 while True:
     event = CloudEvent(
-        subject=f"magicscout:user:{uuid.uuid4()}",
+        subject=f"example:user:{uuid.uuid4()}",
         data={"created_at": datetime.datetime.now().timestamp()},
-        type=f"magicscout.user.{available_actions[random.randint(0,0)]}",  # noqa: S311
-        source="magicscout.service.user",
+        type=f"example.user.{available_actions[random.randint(0,0)]}",  # noqa: S311
+        source="example.service.user",
     )
 
-    res = producer.send(topic="magicscout", value=event)
+    res = producer.send(topic="example", value=event)
     producer.flush()
     print(res.is_done, count)
     count += 1
