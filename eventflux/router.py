@@ -3,62 +3,58 @@ import typing
 from collections.abc import Callable
 from typing import Any
 
+import jsonata
+
 import eventflux.event
 import eventflux.handler
 
 
-def _validate_filters(type: str | None = None, types: list[str] | None = None) -> None:
-    if not types and not type:
-        raise ValueError("at least one of the filters mut be set")
-    if types and type:
-        raise ValueError("only one of the filters must be set")
-
-
-class CloudEventRouter:
+class GenericEventRouter:
     def __init__(self) -> None:
-        self.handlers: dict[str, list[eventflux.handler.CloudEventHandler]] = {}
+        self.handlers: dict[str, list[dict[str, Any]]] = {}
 
     def on_event(
-        self, type: str | None = None, types: list[str] | None = None
+        self,
+        content_type: typing.Literal["application/json"] = "application/json",
+        jsonata_expr: str | None = None,
     ) -> Callable[[Callable[..., Any]], Any]:
-        _validate_filters(type, types)
+        """
+        Registers event handlers, allowing filters to be defined either via kwargs or direct JSONPath.
+        """
 
-        def wrapper(func: typing.Callable[..., typing.Any]) -> typing.Any:
-            _handler = eventflux.handler.CloudEventHandler(func=func)
+        if not jsonata_expr:
+            raise ValueError("jsonata expression is required")
 
-            if type:
-                self._register_handler(type=type, handler=_handler)
-            if types:
-                for _type in types:
-                    self._register_handler(type=_type, handler=_handler)
+        compiled_jsonata_expr = jsonata.Jsonata(jsonata_expr)
 
-        return wrapper
+        def decorator(func: Callable[..., Any]) -> Any:
+            if content_type not in self.handlers:
+                self.handlers[content_type] = []
 
-    def _register_handler(
-        self, type: str, handler: eventflux.handler.CloudEventHandler
-    ) -> None:
-        _registered_handlers = self.handlers.get(type, [])
-        if _registered_handlers:
-            _registered_handlers.append(handler)
-        else:
-            self.handlers.update({type: [handler]})
+            _handler = eventflux.handler.Handler(func=func)
 
-    def _can_route(self, event: eventflux.event.CloudEvent) -> bool:
-        return self.handlers.get(event.type) is not None
+            self.handlers[content_type].append(
+                {
+                    "handler": _handler,
+                    "jsonata_expr": compiled_jsonata_expr,
+                }
+            )
+            return func
 
-    def _handlers_for_event(
-        self, event: eventflux.event.CloudEvent
-    ) -> list[eventflux.handler.CloudEventHandler]:
-        return self.handlers.get(event.type, [])
+        return decorator
 
-    async def _route(self, event: eventflux.event.CloudEvent):
+    async def route_if_match(
+        self,
+        event: eventflux.event.Event,
+        content_type: typing.Literal["application/json"] = "application/json",
+    ):
+        if content_type not in self.handlers:
+            raise ValueError("Invalid content-type detected!")
+
         await asyncio.gather(
             *[
-                handler.handle(event=event)
-                for handler in self._handlers_for_event(event=event)
+                handler["handler"].handle(event=event.payload)
+                for handler in self.handlers[content_type]
+                if handler["jsonata_expr"].evaluate(event.payload)
             ]
         )
-
-    async def route_if_match(self, event: eventflux.event.CloudEvent):
-        if self._can_route(event=event):
-            await self._route(event=event)

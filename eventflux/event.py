@@ -1,5 +1,8 @@
-import cloudevents.pydantic.v2.event
+import dataclasses
+import uuid
 
 
-class CloudEvent(cloudevents.pydantic.v2.CloudEvent):
-    pass
+@dataclasses.dataclass
+class Event:
+    payload: dict
+    id: str = str(uuid.uuid4())

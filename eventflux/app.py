@@ -16,7 +16,7 @@ class App:
         self, identifier: str | None = None, log_level: int = logging.CRITICAL
     ):
         self.identifier = identifier if identifier else str(uuid.uuid4())
-        self.routers: list[eventflux.router.CloudEventRouter] = []
+        self.routers: list[eventflux.router.GenericEventRouter] = []
         self.subscribers: list[eventflux.subscribers.base.SubscriberAbstractClass] = []
         self._in_progress_tasks: dict[int, asyncio.tasks.Task] = {}
         self._must_exit = False
@@ -25,7 +25,7 @@ class App:
         logging.basicConfig(level=log_level)
         self.logger = structlog.get_logger()
 
-    def mount_router(self, router: eventflux.router.CloudEventRouter):
+    def mount_router(self, router: eventflux.router.GenericEventRouter):
         self.routers.append(router)
 
     def mount_subscriber(
@@ -69,13 +69,12 @@ class App:
             )
             await asyncio.sleep(0.01)
 
-    async def handle(self, event: eventflux.event.CloudEvent) -> None:
+    async def handle(self, event: eventflux.event.Event) -> None:
         start_time = time.time()
         tasks = [router.route_if_match(event=event) for router in self.routers]
         await asyncio.gather(*tasks)
         self.logger.debug(
             "event has been processed",
-            type=event.type,
             duration=(time.time() - start_time) * 1000,  # in milliseconds
         )
         self._in_progress_tasks.pop(id(event))

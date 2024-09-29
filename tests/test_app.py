@@ -1,10 +1,12 @@
 import logging
 
 import eventflux
+import eventflux.router
 
 app = eventflux.App(identifier="user-service", log_level=logging.INFO)
 
-user_event_router = eventflux.CloudEventRouter()
+# user_event_router = eventflux.CloudEventRouter()
+user_event_router = eventflux.router.GenericEventRouter()
 
 kafka_subscriber = eventflux.KafkaCloudEventSubscriber(
     bootstrap_servers="localhost:9092",
@@ -14,16 +16,10 @@ kafka_subscriber = eventflux.KafkaCloudEventSubscriber(
 
 
 @user_event_router.on_event(
-    types=["magicscout.user.created", "magicscout.user.registered"]
+    content_type="application/json", jsonata_expr='type = "magicscout.user.created"'
 )
-def user_created_handler(event: eventflux.CloudEvent) -> None:
-    print(event.subject, event.type)
-
-
-@user_event_router.on_event(type="magicscout.user.updated")
-async def user_updated_handler(event: eventflux.CloudEvent) -> None:
-    print(event.subject, event.type)
-    # await asyncio.sleep(5)
+def user_created_handler(event: eventflux.Event) -> None:
+    print(event)
 
 
 app.mount_subscriber(subscriber=kafka_subscriber)

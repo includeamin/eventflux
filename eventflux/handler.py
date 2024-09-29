@@ -4,7 +4,7 @@ import typing
 import eventflux.event
 
 
-class CloudEventHandler:
+class Handler:
     def __init__(
         self,
         func: typing.Callable,
@@ -21,7 +21,7 @@ class CloudEventHandler:
 
         self._awaitable = inspect.iscoroutinefunction(self.func)
 
-    async def handle(self, event: eventflux.event.CloudEvent):
+    async def handle(self, event: eventflux.event.Event):
         if self._awaitable:
             return await self.func(event=event)
         return self.func(event=event)
