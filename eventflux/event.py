@@ -1,5 +1,6 @@
-import cloudevents.pydantic.v2.event
+import dataclasses
 
 
-class CloudEvent(cloudevents.pydantic.v2.CloudEvent):
-    pass
+@dataclasses.dataclass
+class Event:
+    payload: dict
