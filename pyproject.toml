@@ -20,6 +20,8 @@ black = "^24.4.2"
 ruff = "^0.6"
 mypy = "^1.10.1"
 pre-commit = "^3.7.1"
+pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
 
 
 
