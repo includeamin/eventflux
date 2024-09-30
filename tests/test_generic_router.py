@@ -101,7 +101,9 @@ async def test_route_if_match_raises_error_for_invalid_content_type(event_router
 
 
 @pytest.mark.asyncio
-async def test_route_if_match_executes_multiple_matching_handlers_using_jsonata_expr(event_router):
+async def test_route_if_match_executes_multiple_matching_handlers_using_jsonata_expr(
+    event_router,
+):
     """Test that multiple matching handlers for the same JSONata expression are executed concurrently."""
     mock = AsyncMock()
 
@@ -119,7 +121,9 @@ async def test_route_if_match_executes_multiple_matching_handlers_using_jsonata_
 
 
 @pytest.mark.asyncio
-async def test_route_if_match_executes_multiple_matching_handlers_using_filters(event_router):
+async def test_route_if_match_executes_multiple_matching_handlers_using_filters(
+    event_router,
+):
     """Test that multiple matching handlers are executed concurrently based on filters."""
     mock = AsyncMock()
 
@@ -135,7 +139,9 @@ async def test_route_if_match_executes_multiple_matching_handlers_using_filters(
 
 
 @pytest.mark.asyncio
-async def test_route_if_match_executes_multiple_matching_handlers_using_nested_filters(event_router):
+async def test_route_if_match_executes_multiple_matching_handlers_using_nested_filters(
+    event_router,
+):
     """Test that multiple matching handlers are executed concurrently using nested filters."""
     mock = AsyncMock()
 
@@ -170,5 +176,37 @@ async def test_route_if_match_executes_multiple_matching_handlers_using_super_ne
         await mock(event=event)
 
     await event_router.route_if_match(event=eventflux.event.Event(payload=payload))
+
+    mock.assert_awaited_once_with(event=payload)
+
+
+@pytest.mark.asyncio
+async def test_route_if_match_executes_multiple_matching_handlers_operator_based_gt(
+    event_router,
+):
+    """Test that multiple matching handlers are executed concurrently using super nested filters."""
+
+    mock = AsyncMock()
+
+    payload = {
+        "type": "user.registered",
+        "data": {"age": 30},
+    }
+
+    payload2 = {
+        "type": "user.registered",
+        "data": {"age": 20},
+    }
+
+    @event_router.on_event(
+        content_type="application/json",
+        type="user.registered",
+        data={"age": {"$gt": 20}},
+    )
+    async def handler(event: dict) -> None:
+        await mock(event=event)
+
+    await event_router.route_if_match(event=eventflux.event.Event(payload=payload))
+    await event_router.route_if_match(event=eventflux.event.Event(payload=payload2))
 
     mock.assert_awaited_once_with(event=payload)

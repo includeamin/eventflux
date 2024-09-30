@@ -22,13 +22,30 @@ def translate_filters_to_jsonata(filters: dict[str, Any]) -> str:
         str: lambda key, value: f'{key} = "{value}"',
         int: lambda key, value: f"{key} = {value}",
         float: lambda key, value: f"{key} = {value}",
-        # Add more types and their corresponding formatting functions as needed
+        bool: lambda key, value: f"{key} = {str(value).lower()}",
+    }
+
+    # Define the operators mapping with a $ prefix for both symbols and string representations
+    operators = {
+        "$>": lambda key, value: f"{key} > {value}",
+        "$gt": lambda key, value: f"{key} > {value}",
+        "$>=": lambda key, value: f"{key} >= {value}",
+        "$gte": lambda key, value: f"{key} >= {value}",
+        "$<": lambda key, value: f"{key} < {value}",
+        "$lt": lambda key, value: f"{key} < {value}",
+        "$<=": lambda key, value: f"{key} <= {value}",
+        "$lte": lambda key, value: f"{key} <= {value}",
+        "$!=": lambda key, value: f"{key} != {value}",
     }
 
     def format_filter(key: str, value: Any) -> str:
-        """Format a filter based on its type and handle nested properties."""
+        """Format a filter based on its type and handle nested properties and operators."""
         if isinstance(value, dict):
-            # Recursively handle nested dictionaries
+            # Handle operators
+            for op, op_value in value.items():
+                if op in operators:
+                    return operators[op](key, op_value)  # type: ignore[no-untyped-call]
+            # If no recognized operator is found, recurse into nested dictionaries
             return " and ".join(
                 format_filter(f"{key}.{nested_key}", nested_value)
                 for nested_key, nested_value in value.items()
