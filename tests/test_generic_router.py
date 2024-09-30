@@ -16,17 +16,17 @@ def event_router():
 
 @patch("eventflux.handler.Handler")
 def test_on_event_registers_handler(MockHandler, event_router):
-    """Test that the on_event method correctly registers a handler."""
+    """Test that a handler is correctly registered with the on_event method using a JSONata expression."""
     mock_func = AsyncMock()
 
-    async def mock_hanler(event):
+    async def mock_handler(event):
         await mock_func(event=event)
 
     json_expr = "type = 'test'"
     handler_instance = MockHandler.return_value
 
     # Register the event handler with a JSONata expression
-    event_router.on_event(jsonata_expr=json_expr)(mock_hanler)
+    event_router.on_event(jsonata_expr=json_expr)(mock_handler)
 
     # Check that the handler was added to the correct content type
     assert "application/json" in event_router.handlers
@@ -40,14 +40,14 @@ def test_on_event_registers_handler(MockHandler, event_router):
 
 
 def test_on_event_raises_value_error_if_no_jsonata_expr(event_router):
-    """Test that ValueError is raised if no JSONata expression is provided."""
+    """Test that ValueError is raised if no JSONata expression is provided when registering a handler."""
     with pytest.raises(ValueError, match="A JSONata expression is required"):
         event_router.on_event(jsonata_expr=None)
 
 
 @pytest.mark.asyncio
 async def test_on_event_registers_multiple_handlers(event_router):
-    """Test that multiple handlers can be registered for the same content type."""
+    """Test that multiple handlers can be registered for the same JSONata expression and content type."""
     mock_func1 = AsyncMock()
     mock_func2 = AsyncMock()
 
@@ -73,8 +73,7 @@ async def test_on_event_registers_multiple_handlers(event_router):
 
 @pytest.mark.asyncio
 async def test_route_if_match_no_match(event_router):
-    """Test that no handlers are called if no JSONata expression matches the event."""
-
+    """Test that no handlers are called if the event does not match any registered JSONata expressions."""
     mock = AsyncMock()
 
     @event_router.on_event(
@@ -102,11 +101,8 @@ async def test_route_if_match_raises_error_for_invalid_content_type(event_router
 
 
 @pytest.mark.asyncio
-async def test_route_if_match_executes_multiple_matching_handlers_using_jsonata_expr(
-    event_router,
-):
-    """Test that multiple matching handlers are executed concurrently."""
-
+async def test_route_if_match_executes_multiple_matching_handlers_using_jsonata_expr(event_router):
+    """Test that multiple matching handlers for the same JSONata expression are executed concurrently."""
     mock = AsyncMock()
 
     @event_router.on_event(
@@ -123,11 +119,8 @@ async def test_route_if_match_executes_multiple_matching_handlers_using_jsonata_
 
 
 @pytest.mark.asyncio
-async def test_route_if_match_executes_multiple_matching_handlers_using_filters(
-    event_router,
-):
-    """Test that multiple matching handlers are executed concurrently."""
-
+async def test_route_if_match_executes_multiple_matching_handlers_using_filters(event_router):
+    """Test that multiple matching handlers are executed concurrently based on filters."""
     mock = AsyncMock()
 
     @event_router.on_event(content_type="application/json", type="example")
@@ -142,11 +135,8 @@ async def test_route_if_match_executes_multiple_matching_handlers_using_filters(
 
 
 @pytest.mark.asyncio
-async def test_route_if_match_executes_multiple_matching_handlers_using_nested_filters(
-    event_router,
-):
-    """Test that multiple matching handlers are executed concurrently."""
-
+async def test_route_if_match_executes_multiple_matching_handlers_using_nested_filters(event_router):
+    """Test that multiple matching handlers are executed concurrently using nested filters."""
     mock = AsyncMock()
 
     payload = {"type": "user.location.registered", "data": {"country_code": "DE"}}
@@ -164,7 +154,7 @@ async def test_route_if_match_executes_multiple_matching_handlers_using_nested_f
 async def test_route_if_match_executes_multiple_matching_handlers_using_super_nested_filters(
     event_router,
 ):
-    """Test that multiple matching handlers are executed concurrently."""
+    """Test that multiple matching handlers are executed concurrently using super nested filters."""
 
     mock = AsyncMock()
 
