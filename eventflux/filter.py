@@ -25,11 +25,23 @@ def translate_filters_to_jsonata(filters: dict[str, Any]) -> str:
         # Add more types and their corresponding formatting functions as needed
     }
 
-    jsonata_parts = []
+    def format_filter(key: str, value: Any) -> str:
+        """Format a filter based on its type and handle nested properties."""
+        if isinstance(value, dict):
+            # Recursively handle nested dictionaries
+            return " and ".join(
+                format_filter(f"{key}.{nested_key}", nested_value)
+                for nested_key, nested_value in value.items()
+            )
+        else:
+            formatter = formatters.get(type(value))
+            if formatter:
+                return formatter(key, value)
+            else:
+                raise ValueError(
+                    f"Unsupported filter value type: {type(value)} for key: {key}"
+                )
 
-    for key, value in filters.items():
-        formatter = formatters.get(type(value))
-        if formatter:
-            jsonata_parts.append(formatter(key, value))
+    jsonata_parts = [format_filter(key, value) for key, value in filters.items()]
 
     return " and ".join(jsonata_parts)

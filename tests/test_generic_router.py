@@ -139,3 +139,22 @@ async def test_route_if_match_executes_multiple_matching_handlers_using_filters(
     )
 
     mock.assert_awaited_once_with(event={"type": "example"})
+
+
+@pytest.mark.asyncio
+async def test_route_if_match_executes_multiple_matching_handlers_using_nested_filters(
+    event_router,
+):
+    """Test that multiple matching handlers are executed concurrently."""
+
+    mock = AsyncMock()
+
+    payload = {"type": "user.location.registered", "data": {"country_code": "DE"}}
+
+    @event_router.on_event(content_type="application/json", data={"country_code": "DE"})
+    async def handler(event: dict) -> None:
+        await mock(event=event)
+
+    await event_router.route_if_match(event=eventflux.event.Event(payload=payload))
+
+    mock.assert_awaited_once_with(event=payload)
