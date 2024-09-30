@@ -7,6 +7,9 @@ import jsonata
 
 import eventflux.event
 import eventflux.handler
+from eventflux.filter import translate_filters_to_jsonata
+
+DecoratedCallable = typing.TypeVar("DecoratedCallable", bound=Callable[..., Any])
 
 
 class GenericEventRouter:
@@ -25,29 +28,40 @@ class GenericEventRouter:
         self,
         content_type: typing.Literal["application/json"] = "application/json",
         jsonata_expr: str | None = None,
-    ) -> Callable[[Callable[..., Any]], Any]:
+        **filters,
+    ) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """
         Registers an event handler for a specific content type with a filter defined using a JSONata expression.
 
         Args:
             content_type (Literal): The content type of the event (default is "application/json").
-            jsonata_expr (str): A JSONata expression to filter events.
+            jsonata_expr (str | None): A JSONata expression to filter events. If not provided, filters can be specified as keyword arguments.
+            **filters: Optional keyword arguments representing additional filters to be translated into a JSONata expression.
 
         Returns:
             Callable: A decorator that registers the handler.
 
         Raises:
-            ValueError: If no JSONata expression is provided.
+            ValueError: If neither a JSONata expression nor filters are provided.
         """
-        if not jsonata_expr:
+        if not jsonata_expr and not filters:
             raise ValueError("A JSONata expression is required")
+
+        if not jsonata_expr:
+            jsonata_expr = translate_filters_to_jsonata(filters=filters)
 
         # Pre-compile the JSONata expression for performance optimization
         compiled_jsonata_expr = jsonata.Jsonata(jsonata_expr)
 
-        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        def decorator(func: DecoratedCallable) -> DecoratedCallable:
             """
             A decorator to register the event handler with the pre-compiled JSONata expression.
+
+            Args:
+                func (T): The function to be registered as an event handler.
+
+            Returns:
+                T: The original function, now registered as an event handler.
             """
             if content_type not in self.handlers:
                 self.handlers[content_type] = []

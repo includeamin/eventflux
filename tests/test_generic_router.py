@@ -16,17 +16,17 @@ def event_router():
 
 @patch("eventflux.handler.Handler")
 def test_on_event_registers_handler(MockHandler, event_router):
-    """Test that the on_event method correctly registers a handler."""
+    """Test that a handler is correctly registered with the on_event method using a JSONata expression."""
     mock_func = AsyncMock()
 
-    async def mock_hanler(event):
+    async def mock_handler(event):
         await mock_func(event=event)
 
     json_expr = "type = 'test'"
     handler_instance = MockHandler.return_value
 
     # Register the event handler with a JSONata expression
-    event_router.on_event(jsonata_expr=json_expr)(mock_hanler)
+    event_router.on_event(jsonata_expr=json_expr)(mock_handler)
 
     # Check that the handler was added to the correct content type
     assert "application/json" in event_router.handlers
@@ -40,73 +40,53 @@ def test_on_event_registers_handler(MockHandler, event_router):
 
 
 def test_on_event_raises_value_error_if_no_jsonata_expr(event_router):
-    """Test that ValueError is raised if no JSONata expression is provided."""
+    """Test that ValueError is raised if no JSONata expression is provided when registering a handler."""
     with pytest.raises(ValueError, match="A JSONata expression is required"):
         event_router.on_event(jsonata_expr=None)
 
 
-@patch("eventflux.handler.Handler")
-def test_on_event_registers_multiple_handlers(MockHandler, event_router):
-    """Test that multiple handlers can be registered for the same content type."""
+@pytest.mark.asyncio
+async def test_on_event_registers_multiple_handlers(event_router):
+    """Test that multiple handlers can be registered for the same JSONata expression and content type."""
     mock_func1 = AsyncMock()
-
-    async def mock_1_hanler(event):
-        await mock_func1(event=event)
-
     mock_func2 = AsyncMock()
 
-    async def mock_2_hanler(event):
+    @event_router.on_event(
+        content_type="application/json", jsonata_expr='type = "example"'
+    )
+    async def handler(event: dict) -> None:
+        await mock_func1(event=event)
+
+    @event_router.on_event(
+        content_type="application/json", jsonata_expr='type = "example"'
+    )
+    async def handler2(event) -> None:
         await mock_func2(event=event)
 
-    # Register multiple handlers
-    event_router.on_event(jsonata_expr="type = 'test'")(mock_1_hanler)
-    event_router.on_event(jsonata_expr="type = 'test2'")(mock_2_hanler)
+    await event_router.route_if_match(
+        event=eventflux.event.Event(payload={"type": "example"})
+    )
 
-    # Check that both handlers are registered
-    handlers_list = event_router.handlers["application/json"]
-    assert len(handlers_list) == 2
+    mock_func1.assert_awaited_once_with(event={"type": "example"})
+    mock_func2.assert_awaited_once_with(event={"type": "example"})
 
 
 @pytest.mark.asyncio
 async def test_route_if_match_no_match(event_router):
-    """Test that no handlers are called if no JSONata expression matches the event."""
-    mock_func = AsyncMock()
+    """Test that no handlers are called if the event does not match any registered JSONata expressions."""
+    mock = AsyncMock()
 
-    async def mock_hanler(event):
-        await mock_func(event=event)
+    @event_router.on_event(
+        content_type="application/json", jsonata_expr='type = "example"'
+    )
+    async def handler(event) -> None:
+        await mock(event=event)
 
-    event_router.on_event(jsonata_expr="type = 'test'")(mock_hanler)
+    await event_router.route_if_match(
+        event=eventflux.event.Event(payload={"type": "examples"})
+    )
 
-    # Create an event that doesn't match the JSONata expression
-    event = eventflux.event.Event(payload={"type": "non_matching_event"})
-
-    # Patch the JSONata evaluate method to return False
-    with patch("jsonata.Jsonata.evaluate", return_value=False):
-        await event_router.route_if_match(event)
-
-    # Ensure that the handler was not called
-    mock_func.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_route_if_match_executes_matching_handler(event_router):
-    """Test that the handler is executed if the JSONata expression matches the event."""
-    mock_func = AsyncMock()
-
-    async def mock_hanler(event):
-        await mock_func(event=event)
-
-    event_router.on_event(jsonata_expr="type = 'test'")(mock_hanler)
-
-    # Create an event that matches the JSONata expression
-    event = eventflux.event.Event(payload={"type": "test"})
-
-    # Patch the JSONata evaluate method to return True
-    with patch("jsonata.Jsonata.evaluate", return_value=True):
-        await event_router.route_if_match(event)
-
-    # Ensure that the handler was called with the correct event payload
-    mock_func.assert_awaited_once_with(event=event.payload)
+    mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -121,29 +101,112 @@ async def test_route_if_match_raises_error_for_invalid_content_type(event_router
 
 
 @pytest.mark.asyncio
-async def test_route_if_match_executes_multiple_matching_handlers(event_router):
-    """Test that multiple matching handlers are executed concurrently."""
-    mock_func1 = AsyncMock()
+async def test_route_if_match_executes_multiple_matching_handlers_using_jsonata_expr(
+    event_router,
+):
+    """Test that multiple matching handlers for the same JSONata expression are executed concurrently."""
+    mock = AsyncMock()
 
-    async def mock_1_hanler(event):
-        await mock_func1(event=event)
+    @event_router.on_event(
+        content_type="application/json", jsonata_expr='type = "example"'
+    )
+    async def handler(event) -> None:
+        await mock(event=event)
 
-    mock_func2 = AsyncMock()
+    await event_router.route_if_match(
+        event=eventflux.event.Event(payload={"type": "example"})
+    )
 
-    async def mock_2_hanler(event):
-        await mock_func2(event=event)
+    mock.assert_awaited_once_with(event={"type": "example"})
 
-    # Register two handlers with different JSONata expressions
-    event_router.on_event(jsonata_expr="type = 'test'")(mock_1_hanler)
-    event_router.on_event(jsonata_expr="type = 'test'")(mock_2_hanler)
 
-    # Create an event that matches both handlers
-    event = eventflux.event.Event(payload={"type": "test"})
+@pytest.mark.asyncio
+async def test_route_if_match_executes_multiple_matching_handlers_using_filters(
+    event_router,
+):
+    """Test that multiple matching handlers are executed concurrently based on filters."""
+    mock = AsyncMock()
 
-    # Patch the JSONata evaluate method to return True for both handlers
-    with patch("jsonata.Jsonata.evaluate", return_value=True):
-        await event_router.route_if_match(event)
+    @event_router.on_event(content_type="application/json", type="example")
+    async def handler(event: dict) -> None:
+        await mock(event=event)
 
-    # Ensure that both handlers were called concurrently
-    mock_func1.assert_awaited_once_with(event=event.payload)
-    mock_func2.assert_awaited_once_with(event=event.payload)
+    await event_router.route_if_match(
+        event=eventflux.event.Event(payload={"type": "example"})
+    )
+
+    mock.assert_awaited_once_with(event={"type": "example"})
+
+
+@pytest.mark.asyncio
+async def test_route_if_match_executes_multiple_matching_handlers_using_nested_filters(
+    event_router,
+):
+    """Test that multiple matching handlers are executed concurrently using nested filters."""
+    mock = AsyncMock()
+
+    payload = {"type": "user.location.registered", "data": {"country_code": "DE"}}
+
+    @event_router.on_event(content_type="application/json", data={"country_code": "DE"})
+    async def handler(event: dict) -> None:
+        await mock(event=event)
+
+    await event_router.route_if_match(event=eventflux.event.Event(payload=payload))
+
+    mock.assert_awaited_once_with(event=payload)
+
+
+@pytest.mark.asyncio
+async def test_route_if_match_executes_multiple_matching_handlers_using_super_nested_filters(
+    event_router,
+):
+    """Test that multiple matching handlers are executed concurrently using super nested filters."""
+
+    mock = AsyncMock()
+
+    payload = {
+        "type": "user.location.registered",
+        "data": {"location": {"country_code": "DE", "alt": 0, "lat": 0, "lon": 0}},
+    }
+
+    @event_router.on_event(
+        content_type="application/json", data={"location": {"country_code": "DE"}}
+    )
+    async def handler(event: dict) -> None:
+        await mock(event=event)
+
+    await event_router.route_if_match(event=eventflux.event.Event(payload=payload))
+
+    mock.assert_awaited_once_with(event=payload)
+
+
+@pytest.mark.asyncio
+async def test_route_if_match_executes_multiple_matching_handlers_operator_based_gt(
+    event_router,
+):
+    """Test that multiple matching handlers are executed concurrently using super nested filters."""
+
+    mock = AsyncMock()
+
+    payload = {
+        "type": "user.registered",
+        "data": {"age": 30},
+    }
+
+    payload2 = {
+        "type": "user.registered",
+        "data": {"age": 20},
+    }
+
+    @event_router.on_event(
+        content_type="application/json",
+        type="user.registered",
+        data={"age": {"$gt": 20}},
+    )
+    async def handler(event: dict) -> None:
+        await mock(event=event)
+
+    await event_router.route_if_match(event=eventflux.event.Event(payload=payload))
+    await event_router.route_if_match(event=eventflux.event.Event(payload=payload2))
+
+    mock.assert_awaited_once_with(event=payload)

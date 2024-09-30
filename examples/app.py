@@ -14,10 +14,17 @@ kafka_subscriber = eventflux.KafkaCloudEventSubscriber(
 )
 
 
+# @user_event_router.on_event(
+#     content_type="application/json", jsonata_expr='type = "example.user.created"'
+# )
+# def user_created_handler(event: eventflux.Event) -> None:
+#     print(event)
+
+
 @user_event_router.on_event(
-    content_type="application/json", jsonata_expr='type = "example.user.created"'
+    content_type="application/json", type="example.user.deleted"
 )
-def user_created_handler(event: eventflux.Event) -> None:
+def user_deleted(event: eventflux.Event) -> None:
     print(event)
 
 
