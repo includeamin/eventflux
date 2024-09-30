@@ -1,3 +1,5 @@
+import typing
+
 import pytest
 
 from eventflux.filter import translate_filters_to_jsonata
@@ -57,7 +59,7 @@ def test_translate_unsupported_type():
 
 def test_translate_empty_filters():
     """Test translating an empty filter dictionary."""
-    filters = {}
+    filters: dict[str, typing.Any] = {}
     expected = ""
     assert translate_filters_to_jsonata(filters) == expected
 
