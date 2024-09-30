@@ -1,40 +1,35 @@
-import jsonata
-from typing import Dict, Any
+from collections.abc import Callable
+from typing import Any
 
 
-def translate_filters_to_jsonata(filters: Dict[str, Any]) -> str:
+def translate_filters_to_jsonata(filters: dict[str, Any]) -> str:
     """
     Translates a dictionary of filters into a JSONata expression.
 
+    The function iterates through the provided dictionary and constructs a JSONata expression
+    based on the key-value pairs. The formatting logic for each data type is extensible
+    via a mapping.
+
     Args:
-        filters (dict): A dictionary where the keys are the field names and the values are the values to match.
+        filters (dict[str, Any]): A dictionary where keys represent field names
+                                   and values are the criteria to match.
 
     Returns:
-        str: The corresponding JSONata expression as a string.
+        str: A JSONata expression as a string, combining all filters with 'and'.
     """
+    # Define a mapping of types to their corresponding formatting functions
+    formatters: dict[type, Callable[[str, Any], str]] = {
+        str: lambda key, value: f'{key} = "{value}"',
+        int: lambda key, value: f"{key} = {value}",
+        float: lambda key, value: f"{key} = {value}",
+        # Add more types and their corresponding formatting functions as needed
+    }
+
     jsonata_parts = []
 
     for key, value in filters.items():
-        if isinstance(value, str):
-            # Translate simple key-value pairs
-            jsonata_parts.append(f'{key} = "{value}"')
-        elif isinstance(value, int | float):
-            # For numerical values, just add them directly without quotes
-            jsonata_parts.append(f"{key} = {value}")
-        elif isinstance(value, list):
-            # Handle lists (e.g., field should match any value in a list)
-            jsonata_parts.append(f'{key} in [{", ".join(map(str, value))}]')
-        # Extend here to handle more complex cases like ranges, regex, etc.
-        # elif isinstance(value, SomeOtherType):
-        #     jsonata_parts.append(f'...')
+        formatter = formatters.get(type(value))
+        if formatter:
+            jsonata_parts.append(formatter(key, value))
 
-    # Join all parts with 'and' for a combined expression
     return " and ".join(jsonata_parts)
-
-
-# Example usage of the translator
-filters = {"name": "example.user.created", "age": 30, "roles": ["admin", "user"]}
-
-jsonata_expr_str = translate_filters_to_jsonata(filters)
-compiled_jsonata_expr = jsonata.Jsonata(jsonata_expr_str)
-print(f"Translated JSONata Expression: {jsonata_expr_str}")
